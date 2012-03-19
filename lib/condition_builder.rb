@@ -77,7 +77,7 @@ class Condition
         raise "No value specified for Condition"
       when 1
         if values.last == nil
-          left << ?#{column} IS NULL?
+          left << "#{column} IS NULL"
         else
           if values.last.is_a?(Array)
             left << "#{column} IN (?)"
@@ -87,13 +87,26 @@ class Condition
           right << values.last
         end
       when 2
-        operator = values.shift
-        if values.last.is_a?(Array)
-          left << "#{column} IN (?)"
+        operator = values.first
+        operand = values.last
+        if operand.is_a?(Array)
+          if operator == "~"
+            left << "#{column} NOT IN (?)"
+          else
+            left << "#{column} IN (?)"
+          end
+          right << operand
+        elsif operand == nil
+          if operator == "~"
+            left << "#{column} IS NOT NULL"
+          else
+            left << "#{column} #{operator} ?"
+            right << operand
+          end
         else
           left << "#{column} #{operator} ?"
+          right << operand
         end
-        right << values.last
       else
         operator = values.first
         if operator.upcase == "BETWEEN"
